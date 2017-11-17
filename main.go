@@ -7,7 +7,21 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"time"
 )
+
+type LibraryEntry struct {
+	Filename    string
+	Title       string
+	Tags        []string
+	Date        time.Time
+	Description string
+}
+
+type Library struct {
+	Tags    []string
+	Entries map[string]*LibraryEntry
+}
 
 var (
 	templates = template.Must(template.ParseFiles("tmpl/status.tmpl", "tmpl/list.tmpl", "tmpl/player.tmpl"))
@@ -15,7 +29,7 @@ var (
 	port     = flag.Int("port", 8080, "Serving port")
 	videoDir = flag.String("video_dir", "video", "Directory to search for files to be tagged")
 
-	files []string
+	library = Library{}
 )
 
 func OKHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,11 +40,11 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	s := struct {
 		Port     int
 		VideoDir string
-		Files    []string
+		Library  Library
 	}{
 		Port:     *port,
 		VideoDir: *videoDir,
-		Files:    files,
+		Library:  library,
 	}
 
 	err := templates.ExecuteTemplate(w, "status.tmpl", s)
@@ -40,17 +54,10 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
-	s := struct {
-		Files []string
-	}{
-		Files: files,
-	}
-
-	err := templates.ExecuteTemplate(w, "list.tmpl", s)
+	err := templates.ExecuteTemplate(w, "list.tmpl", library)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
 }
 
 func playerHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,16 +87,16 @@ func findVideos() {
 	*videoDir = path
 	log.Printf("Loading videos from %s", *videoDir)
 
-	files, err = filepath.Glob(path + "/*")
+	files, err := filepath.Glob(path + "/*")
 	if err != nil {
 		log.Printf("Error globbing videos: %s", err)
 	}
 
 	log.Println("Located the following files:")
-	for i, v := range files {
+	for _, v := range files {
 		v = filepath.Base(v)
-		files[i] = v
 		log.Printf("  %s", v)
+		library.Entries[v] = &LibraryEntry{Filename: v}
 	}
 }
 
@@ -103,6 +110,8 @@ func main() {
 	http.HandleFunc("/player", playerHandler)
 	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+
+	library.Entries = make(map[string]*LibraryEntry)
 
 	findVideos()
 

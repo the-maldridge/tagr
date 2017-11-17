@@ -2,6 +2,6 @@ Tagr is running
 port: {{.Port}}
 video_directory: {{.VideoDir}}
 files:
-{{- range $i, $v := .Files}}
-  {{$v}}
+{{- range $i, $v := .Library.Entries}}
+  {{$v.Filename}}
 {{- end}}
