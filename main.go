@@ -67,6 +67,7 @@ func main() {
 
 	http.HandleFunc("/ok", OKHandler)
 	http.HandleFunc("/status", statusHandler)
+	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
 
 	findVideos()
 
