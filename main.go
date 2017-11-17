@@ -15,7 +15,7 @@ var (
 	port     = flag.Int("port", 8080, "Serving port")
 	videoDir = flag.String("video_dir", "video", "Directory to search for files to be tagged")
 
-	videos []string
+	files []string
 )
 
 func OKHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,11 +26,11 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	s := struct {
 		Port     int
 		VideoDir string
-		Videos   []string
+		Files    []string
 	}{
 		Port:     *port,
 		VideoDir: *videoDir,
-		Videos:   videos,
+		Files:    files,
 	}
 
 	err := templates.ExecuteTemplate(w, "status.tmpl", s)
@@ -41,16 +41,16 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
 	s := struct {
-		Videos   []string
+		Files []string
 	}{
-		Videos:   videos,
+		Files: files,
 	}
 
 	err := templates.ExecuteTemplate(w, "list.tmpl", s)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	
+
 }
 
 func playerHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 	}{
 		File: r.FormValue("file"),
 	}
-	
+
 	err = templates.ExecuteTemplate(w, "player.tmpl", s)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -80,15 +80,15 @@ func findVideos() {
 	*videoDir = path
 	log.Printf("Loading videos from %s", *videoDir)
 
-	videos, err = filepath.Glob(path + "/*")
+	files, err = filepath.Glob(path + "/*")
 	if err != nil {
 		log.Printf("Error globbing videos: %s", err)
 	}
 
 	log.Println("Located the following files:")
-	for i, v := range videos {
+	for i, v := range files {
 		v = filepath.Base(v)
-		videos[i] = v
+		files[i] = v
 		log.Printf("  %s", v)
 	}
 }
