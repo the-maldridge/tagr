@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	templates = template.Must(template.ParseFiles("tmpl/status.tmpl"))
+	templates = template.Must(template.ParseFiles("tmpl/status.tmpl", "tmpl/list.tmpl", "tmpl/player.tmpl"))
 
 	port     = flag.Int("port", 8080, "Serving port")
 	videoDir = flag.String("video_dir", "video", "Directory to search for files to be tagged")
@@ -34,6 +34,38 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := templates.ExecuteTemplate(w, "status.tmpl", s)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	s := struct {
+		Videos   []string
+	}{
+		Videos:   videos,
+	}
+
+	err := templates.ExecuteTemplate(w, "list.tmpl", s)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	
+}
+
+func playerHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Fprintf(w, "Error decoding request!")
+	}
+
+	s := struct {
+		File string
+	}{
+		File: r.FormValue("file"),
+	}
+	
+	err = templates.ExecuteTemplate(w, "player.tmpl", s)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -67,7 +99,10 @@ func main() {
 
 	http.HandleFunc("/ok", OKHandler)
 	http.HandleFunc("/status", statusHandler)
+	http.HandleFunc("/list", listHandler)
+	http.HandleFunc("/player", playerHandler)
 	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	findVideos()
 
