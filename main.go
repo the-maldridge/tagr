@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
@@ -66,16 +67,24 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error decoding request!")
 	}
 
-	s := struct {
-		File string
-	}{
-		File: r.FormValue("file"),
-	}
-
-	err = templates.ExecuteTemplate(w, "player.tmpl", s)
+	err = templates.ExecuteTemplate(w, "player.tmpl", library.Entries[r.FormValue("file")])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func infoHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println("infoHandler: form parse error!")
+	}
+
+	data, err := json.Marshal(library.Entries[r.FormValue("file")])
+	if err != nil {
+		log.Println("infoHandler: json marshal error!")
+	}
+
+	fmt.Fprintf(w, "%s", data)
 }
 
 func findVideos() {
@@ -95,8 +104,13 @@ func findVideos() {
 	log.Println("Located the following files:")
 	for _, v := range files {
 		v = filepath.Base(v)
-		log.Printf("  %s", v)
-		library.Entries[v] = &LibraryEntry{Filename: v}
+		if library.Entries[v] == nil {
+			// Add a file we haven't seen before
+			log.Printf("  New File: %s", v)
+			library.Entries[v] = &LibraryEntry{Filename: v}
+		} else {
+			log.Printf("  Known File: %s", v)
+		}
 	}
 }
 
@@ -108,10 +122,18 @@ func main() {
 	http.HandleFunc("/status", statusHandler)
 	http.HandleFunc("/list", listHandler)
 	http.HandleFunc("/player", playerHandler)
+	http.HandleFunc("/info", infoHandler)
 	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	library.Entries = make(map[string]*LibraryEntry)
+
+	// shim this in for testing
+	library.Entries["big_buck_bunny.mp4"] = &LibraryEntry{
+		Filename:    "big_buck_bunny.mp4",
+		Title:       "Big Buck Bunny",
+		Description: "A test film from the fine folks at Blender",
+	}
 
 	findVideos()
 
