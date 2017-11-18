@@ -110,6 +110,10 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	library.Entries[file] = entry
 }
 
+func dbDumpHandler(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(library)
+}
+
 func findVideos() {
 	log.Println("Begining video search")
 	path, err := filepath.Abs(*videoDir)
@@ -147,6 +151,7 @@ func main() {
 	http.HandleFunc("/player", playerHandler)
 	http.HandleFunc("/info", infoHandler)
 	http.HandleFunc("/update", updateHandler)
+	http.HandleFunc("/db", dbDumpHandler)
 	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
