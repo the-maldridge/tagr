@@ -79,12 +79,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("infoHandler: form parse error!")
 	}
 
-	data, err := json.Marshal(library.Entries[r.FormValue("file")])
-	if err != nil {
-		log.Println("infoHandler: json marshal error!")
-	}
-
-	fmt.Fprintf(w, "%s", data)
+	json.NewEncoder(w).Encode(library.Entries[r.FormValue("file")])
 }
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
