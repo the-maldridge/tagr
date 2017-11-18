@@ -23,6 +23,7 @@
                     <input type="text" id="tags" />
                 </label>
             </form>
+            <button onClick="sendForm()">Update</button>
         </div>
     </body>
     <script>
@@ -32,7 +33,6 @@
          xhr.onreadystatechange = function() {
              if (xhr.readyState === XMLHttpRequest.DONE) {
                  if (xhr.status === 200) {
-                     console.log(xhr.response);
                      document.getElementById('title').value = xhr.response.Title;
                      document.getElementById('date').value = xhr.response.Date;
                      document.getElementById('description').value = xhr.response.Description;
@@ -44,6 +44,29 @@
          }
          xhr.open('GET', '/info?file={{.}}')
          xhr.send()
+     }
+
+     function sendForm() {
+         data = new Object();
+         data.Filename = "{{.}}";
+         data.Title = document.getElementById('title').value;
+         data.Date = document.getElementById('date').value;
+         data.Description = document.getElementById('description').value;
+         data.Tags = document.getElementById('tags').value.split(',');
+         console.log(data);
+         xhr = new XMLHttpRequest();
+         xhr.open("POST", "/update?file={{.}}", true);
+         xhr.setRequestHeader('Content-Type', 'application/json');
+         xhr.send(JSON.stringify(data));
+         xhr.onreadystatechange = function() {
+             if (xhr.readyState === XMLHttpRequest.DONE) {
+                 if (xhr.status === 200) {
+                     console.log("Update Successful");
+                 } else {
+                     alert("Information Update failed!");
+                 }
+             }
+         }
      }
 
      updateForm()

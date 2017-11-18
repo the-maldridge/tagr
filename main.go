@@ -87,6 +87,29 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", data)
 }
 
+func updateHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println("updateHandler: form parse error!")
+	}
+
+	file := r.FormValue("file")
+	if file == "" {
+		log.Println("malformed update request!")
+		return
+	}
+
+	entry := &LibraryEntry{}
+	err = json.NewDecoder(r.Body).Decode(&entry)
+	if err != nil {
+		log.Println("updateHandler: json decode fault!")
+	}
+
+	log.Printf("Updating metadata for %s", file)
+
+	library.Entries[file] = entry
+}
+
 func findVideos() {
 	log.Println("Begining video search")
 	path, err := filepath.Abs(*videoDir)
@@ -123,6 +146,7 @@ func main() {
 	http.HandleFunc("/list", listHandler)
 	http.HandleFunc("/player", playerHandler)
 	http.HandleFunc("/info", infoHandler)
+	http.HandleFunc("/update", updateHandler)
 	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
