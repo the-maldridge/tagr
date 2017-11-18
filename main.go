@@ -172,6 +172,17 @@ func dbBackupTimer() {
 	}
 }
 
+func dbLoad() {
+	d, err := ioutil.ReadFile("tagr.json")
+	if err != nil {
+		log.Fatalf("Could not load database: %s", err)
+	}
+	err = json.Unmarshal(d, &library)
+	if err != nil {
+		log.Fatalf("Could not unpack database: %s", err)
+	}
+}
+
 func main() {
 	flag.Parse()
 	log.Println("Tagr Server is initializing...")
@@ -197,6 +208,7 @@ func main() {
 		Tags:        []string{"cartoon", "animal"},
 	}
 
+	dbLoad()
 	findVideos()
 	dbBackup()
 
