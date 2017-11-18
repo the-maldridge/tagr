@@ -5,7 +5,7 @@
   <body>
     <h1>Videos known to Tagr:</h1>
     {{- range $i, $f := .Entries}}
-    <a href="/player?file={{$f.Filename}}">{{$f.Filename}}</a><br />
+    <a href="/player?file={{$f.Filename}}">{{if $f.Title}}{{$f.Title}}{{else}}{{$f.Filename}}{{end}}</a><br />
     {{- end}}
   </body>
 </html>
