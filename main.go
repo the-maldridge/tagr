@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -27,14 +28,17 @@ type Library struct {
 var (
 	templates = template.Must(template.ParseFiles("tmpl/status.tmpl", "tmpl/list.tmpl", "tmpl/player.tmpl"))
 
-	port     = flag.Int("port", 8080, "Serving port")
-	videoDir = flag.String("video_dir", "video", "Directory to search for files to be tagged")
+	port         = flag.Int("port", 8080, "Serving port")
+	videoDir     = flag.String("video_dir", "video", "Directory to search for files to be tagged")
+	saveInterval = flag.Duration("save_interval", 5*time.Minute, "How often to back up the database to disk")
 
 	library = Library{}
+	healthy = "OK"
+	dbDirty = false
 )
 
 func OKHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "OK")
+	fmt.Fprintf(w, healthy)
 }
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +109,9 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Updating metadata for %s", file)
 	library.Entries[file] = entry
+
+	// mark the DB dirty, this causes the backup to actually do things
+	dbDirty = true
 }
 
 func dbDumpHandler(w http.ResponseWriter, r *http.Request) {
@@ -140,6 +147,31 @@ func findVideos() {
 	}
 }
 
+func dbBackup() {
+	log.Println("Backup up database")
+	d, err := json.Marshal(library)
+	if err != nil {
+		log.Println("Marshaling error during database backup!")
+		// flip the global status to bad here
+		healthy = "NOT OK"
+	}
+	err = ioutil.WriteFile("tagr.json", d, 0644)
+	if err != nil {
+		log.Println("File Write error during database backup!")
+		healthy = "NOT OK"
+	}
+	log.Println("Database backup complete")
+}
+
+func dbBackupTimer() {
+	for range time.Tick(*saveInterval) {
+		if dbDirty {
+			dbBackup()
+			dbDirty = false
+		}
+	}
+}
+
 func main() {
 	flag.Parse()
 	log.Println("Tagr Server is initializing...")
@@ -161,11 +193,15 @@ func main() {
 		Filename:    "big_buck_bunny.mp4",
 		Title:       "Big Buck Bunny",
 		Description: "A test film from the fine folks at Blender",
-		Date: time.Now(),
-		Tags: []string{"cartoon", "animal"},
+		Date:        time.Now(),
+		Tags:        []string{"cartoon", "animal"},
 	}
 
 	findVideos()
+	dbBackup()
+
+	// launch the backup goroutine
+	go dbBackupTimer()
 
 	http.ListenAndServe(":8080", nil)
 }
