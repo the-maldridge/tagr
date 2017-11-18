@@ -67,7 +67,7 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error decoding request!")
 	}
 
-	err = templates.ExecuteTemplate(w, "player.tmpl", library.Entries[r.FormValue("file")])
+	err = templates.ExecuteTemplate(w, "player.tmpl", library.Entries[r.FormValue("file")].Filename)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -133,6 +133,8 @@ func main() {
 		Filename:    "big_buck_bunny.mp4",
 		Title:       "Big Buck Bunny",
 		Description: "A test film from the fine folks at Blender",
+		Date: time.Now(),
+		Tags: []string{"cartoon", "animal"},
 	}
 
 	findVideos()

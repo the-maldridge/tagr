@@ -4,7 +4,48 @@
     </head>
     <body>
         <video controls="controls" width="800">
-            <source src="/video-file/{{.File}}" type="video/mp4" />
+            <source src="/video-file/{{.}}" type="video/mp4" />
         </video>
+        <div id="metabox">
+            <form id="generalMeta">
+                <label>Title:
+                    <input type="text" id="title" />
+                </label>
+                <label>Date:
+                    <input type="text" id="date" />
+                </label>
+                <br />
+                <label>Description:<br />
+                    <textarea id="description" cols="98" rows="5" ></textarea>
+                </label>
+                <br />
+                <label>Tags:
+                    <input type="text" id="tags" />
+                </label>
+            </form>
+        </div>
     </body>
+    <script>
+     function updateForm() {
+         xhr = new XMLHttpRequest();
+         xhr.responseType = 'json';
+         xhr.onreadystatechange = function() {
+             if (xhr.readyState === XMLHttpRequest.DONE) {
+                 if (xhr.status === 200) {
+                     console.log(xhr.response);
+                     document.getElementById('title').value = xhr.response.Title;
+                     document.getElementById('date').value = xhr.response.Date;
+                     document.getElementById('description').value = xhr.response.Description;
+                     document.getElementById('tags').value = xhr.response.Tags.join();
+                 } else {
+                     alert('Could not obtain file metadata.');
+                 }
+             }
+         }
+         xhr.open('GET', '/info?file={{.}}')
+         xhr.send()
+     }
+
+     updateForm()
+    </script>
 </html>
