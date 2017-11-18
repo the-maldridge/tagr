@@ -197,15 +197,7 @@ func main() {
 
 	library = make(map[string]*LibraryEntry)
 
-	// shim this in for testing
-	library["big_buck_bunny.mp4"] = &LibraryEntry{
-		Filename:    "big_buck_bunny.mp4",
-		Title:       "Big Buck Bunny",
-		Description: "A test film from the fine folks at Blender",
-		Date:        time.Now(),
-		Tags:        []string{"cartoon", "animal"},
-	}
-
+	// Init some state
 	dbLoad()
 	findVideos()
 	dbBackup()
