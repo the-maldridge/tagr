@@ -20,10 +20,6 @@ type LibraryEntry struct {
 	Description string
 }
 
-type Library struct {
-	Tags    []string
-	Entries map[string]*LibraryEntry
-}
 
 var (
 	templates = template.Must(template.ParseFiles("tmpl/status.tmpl", "tmpl/list.tmpl", "tmpl/player.tmpl"))
@@ -32,9 +28,9 @@ var (
 	videoDir     = flag.String("video_dir", "video", "Directory to search for files to be tagged")
 	saveInterval = flag.Duration("save_interval", 5*time.Minute, "How often to back up the database to disk")
 
-	library = Library{}
 	healthy = "OK"
 	dbDirty = false
+	library map[string]*LibraryEntry
 )
 
 func OKHandler(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +41,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	s := struct {
 		Port     int
 		VideoDir string
-		Library  Library
+		Library map[string]*LibraryEntry
 	}{
 		Port:     *port,
 		VideoDir: *videoDir,
@@ -71,7 +67,7 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error decoding request!")
 	}
 
-	err = templates.ExecuteTemplate(w, "player.tmpl", library.Entries[r.FormValue("file")].Filename)
+	err = templates.ExecuteTemplate(w, "player.tmpl", library[r.FormValue("file")].Filename)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -83,7 +79,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("infoHandler: form parse error!")
 	}
 
-	json.NewEncoder(w).Encode(library.Entries[r.FormValue("file")])
+	json.NewEncoder(w).Encode(library[r.FormValue("file")])
 }
 
 func updateHandler(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +104,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("updateHandler: json decode fault!")
 	}
 	log.Printf("Updating metadata for %s", file)
-	library.Entries[file] = entry
+	library[file] = entry
 
 	// mark the DB dirty, this causes the backup to actually do things
 	dbDirty = true
@@ -137,10 +133,10 @@ func findVideos() {
 	log.Println("Located the following files:")
 	for _, v := range files {
 		v = filepath.Base(v)
-		if library.Entries[v] == nil {
+		if library[v] == nil {
 			// Add a file we haven't seen before
 			log.Printf("  New File: %s", v)
-			library.Entries[v] = &LibraryEntry{Filename: v}
+			library[v] = &LibraryEntry{Filename: v}
 		} else {
 			log.Printf("  Known File: %s", v)
 		}
@@ -173,6 +169,7 @@ func dbBackupTimer() {
 }
 
 func dbLoad() {
+	log.Println("Loading Database")
 	d, err := ioutil.ReadFile("tagr.json")
 	if err != nil {
 		log.Fatalf("Could not load database: %s", err)
@@ -181,6 +178,7 @@ func dbLoad() {
 	if err != nil {
 		log.Fatalf("Could not unpack database: %s", err)
 	}
+	log.Println("Database load complete")
 }
 
 func main() {
@@ -197,10 +195,10 @@ func main() {
 	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
-	library.Entries = make(map[string]*LibraryEntry)
+	library = make(map[string]*LibraryEntry)
 
 	// shim this in for testing
-	library.Entries["big_buck_bunny.mp4"] = &LibraryEntry{
+	library["big_buck_bunny.mp4"] = &LibraryEntry{
 		Filename:    "big_buck_bunny.mp4",
 		Title:       "Big Buck Bunny",
 		Description: "A test film from the fine folks at Blender",
