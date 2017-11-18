@@ -94,18 +94,22 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The update process is a complete overwrite every time it is
+	// run, for this reason we have to make sure the form on the
+	// viewer page is complete before sending it back.  This needs
+	// to be communicated to the user as a manual expectation.
 	entry := &LibraryEntry{}
 	err = json.NewDecoder(r.Body).Decode(&entry)
 	if err != nil {
 		log.Println("updateHandler: json decode fault!")
 	}
-
 	log.Printf("Updating metadata for %s", file)
-
 	library.Entries[file] = entry
 }
 
 func dbDumpHandler(w http.ResponseWriter, r *http.Request) {
+	// This function is almost entirely for dumping the database
+	// during test or similar purposes.
 	json.NewEncoder(w).Encode(library)
 }
 
