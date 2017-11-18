@@ -4,8 +4,10 @@
   </head>
   <body>
     <h1>Videos known to Tagr:</h1>
-    {{- range $i, $f := .Entries}}
-    <a href="/player?file={{$f.Filename}}">{{if $f.Title}}{{$f.Title}}{{else}}{{$f.Filename}}{{end}}</a><br />
-    {{- end}}
+    <ol>
+      {{- range $i, $f := .Entries}}
+      <li><a href="/player?file={{$f.Filename}}">{{if $f.Title}}{{$f.Title}}{{else}}{{$f.Filename}}{{end}}</a></li>
+      {{- end}}
+    </ol>
   </body>
 </html>
