@@ -193,7 +193,6 @@ func main() {
 	http.HandleFunc("/update", updateHandler)
 	http.HandleFunc("/db", dbDumpHandler)
 	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
 	library = make(map[string]*LibraryEntry)
 
