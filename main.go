@@ -181,10 +181,15 @@ func dbLoad() {
 	log.Println("Database load complete")
 }
 
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/list", 302)
+}
+
 func main() {
 	flag.Parse()
 	log.Println("Tagr Server is initializing...")
 
+	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/ok", OKHandler)
 	http.HandleFunc("/status", statusHandler)
 	http.HandleFunc("/list", listHandler)
