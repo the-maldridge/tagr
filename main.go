@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
 	"time"
+
+	"github.com/arschles/go-bindata-html-template"
+	"github.com/elazarl/go-bindata-assetfs"	
 )
 
 // LibraryEntry defines a single video and all information known about
@@ -24,8 +26,10 @@ type LibraryEntry struct {
 
 
 var (
-	templates = template.Must(template.ParseFiles("tmpl/status.tmpl", "tmpl/list.tmpl", "tmpl/player.tmpl"))
-
+	listTmpl *template.Template
+	plyrTmpl *template.Template
+	statTmpl *template.Template
+	
 	port         = flag.Int("port", 8080, "Serving port")
 	videoDir     = flag.String("video_dir", "video", "Directory to search for files to be tagged")
 	saveInterval = flag.Duration("save_interval", 5*time.Minute, "How often to back up the database to disk")
@@ -34,6 +38,24 @@ var (
 	dbDirty = false
 	library map[string]*LibraryEntry
 )
+
+func init() {
+	var err error
+	listTmpl, err = template.New("list", Asset).ParseFiles("static/tmpl/main.tmpl", "static/tmpl/list.tmpl")
+	if err != nil {
+		log.Fatalf("Could not load listTmpl: %s", err)
+	}
+	
+	plyrTmpl, err = template.New("player", Asset).ParseFiles("static/tmpl/main.tmpl", "static/tmpl/plyr.tmpl")
+	if err != nil {
+		log.Fatalf("Could not load plyrTmpl: %s", err)
+	}
+
+	statTmpl, err = template.New("stat", Asset).ParseFiles("static/tmpl/status.tmpl")
+	if err != nil {
+		log.Fatalf("Could not load statTmpl: %s", err)
+	}
+}
 
 func okHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, healthy)
@@ -50,14 +72,14 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 		Library:  library,
 	}
 
-	err := templates.ExecuteTemplate(w, "status.tmpl", s)
+	err := statTmpl.ExecuteTemplate(w, "stat", s)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
-	err := templates.ExecuteTemplate(w, "list.tmpl", library)
+	err := listTmpl.ExecuteTemplate(w, "layout", library)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -69,7 +91,7 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error decoding request!")
 	}
 
-	err = templates.ExecuteTemplate(w, "player.tmpl", library[r.FormValue("file")].Filename)
+	err = plyrTmpl.ExecuteTemplate(w, "layout", library[r.FormValue("file")].Filename)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -201,6 +223,16 @@ func main() {
 	http.HandleFunc("/db", dbDumpHandler)
 	http.Handle("/video-file/", http.StripPrefix("/video-file/", http.FileServer(http.Dir(*videoDir))))
 
+	http.Handle("/static/",
+		http.FileServer(
+			&assetfs.AssetFS{
+				Asset:     Asset,
+				AssetDir:  AssetDir,
+				AssetInfo: AssetInfo,
+			},
+		),
+	)
+	
 	library = make(map[string]*LibraryEntry)
 
 	// Init some state
