@@ -91,7 +91,7 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error decoding request!")
 	}
 
-	err = plyrTmpl.ExecuteTemplate(w, "layout", library[r.FormValue("file")].Filename)
+	err = plyrTmpl.ExecuteTemplate(w, "layout", library[r.FormValue("file")])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

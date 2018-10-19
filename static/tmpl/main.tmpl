@@ -1,10 +1,32 @@
 {{ define "layout" }}
-<html>
+<!doctype html>
+<html class="no-js" lang="en">
     <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Tagr</title>
+        <link rel="stylesheet" href="/static/css/foundation.css" />
     </head>
     <body>
+        {{ template "top-bar" . }}
+
         {{ template "content" . }}
+
+        <script src="/static/js/vendor/jquery.js"></script>
+        <script src="/static/js/vendor/what-input.js"></script>
+        <script src="/static/js/vendor/foundation.min.js"></script>
+        <script>
+         $(document).foundation();
+        </script>
     </body>
 </html>
+{{ end }}
+
+{{ define "top-bar" }}
+<div class="top-bar">
+    <div class="top-bar-left">
+        <a href="/" class="menu-text">Tagr</a>
+    </div>
+</div>
 {{ end }}

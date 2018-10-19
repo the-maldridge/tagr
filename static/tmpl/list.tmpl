@@ -1,8 +1,16 @@
 {{ define "content" }}
-<h1>Videos known to Tagr:</h1>
-<ol>
-  {{- range $i, $f := .}}
-  <li><a href="/player?file={{$f.Filename}}">{{if $f.Title}}{{$f.Title}}{{else}}{{$f.Filename}}{{end}}</a></li>
-      {{- end}}
-</ol>
+<br />
+<div class="card" style="width: 75%; margin: auto;">
+    <div class="card-divider">
+        Videos known to Tagr:
+    </div>
+    <div class="card-section">
+        <ol>
+            {{- range $i, $f := .}}
+            <li><a href="/player?file={{$f.Filename}}">{{if $f.Title}}{{$f.Title}}{{else}}{{$f.Filename}}{{end}}</a></li>
+            {{- end}}
+        </ol>
+    </div>
+</div>
+<br />
 {{ end }}
