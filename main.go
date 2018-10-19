@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+// LibraryEntry defines a single video and all information known about
+// it.
 type LibraryEntry struct {
 	Filename    string
 	Title       string
@@ -33,7 +35,7 @@ var (
 	library map[string]*LibraryEntry
 )
 
-func OKHandler(w http.ResponseWriter, r *http.Request) {
+func okHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, healthy)
 }
 
@@ -190,7 +192,7 @@ func main() {
 	log.Println("Tagr Server is initializing...")
 
 	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/ok", OKHandler)
+	http.HandleFunc("/ok", okHandler)
 	http.HandleFunc("/status", statusHandler)
 	http.HandleFunc("/list", listHandler)
 	http.HandleFunc("/player", playerHandler)
