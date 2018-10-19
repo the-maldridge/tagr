@@ -8,10 +8,11 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/arschles/go-bindata-html-template"
-	"github.com/elazarl/go-bindata-assetfs"	
+	"github.com/elazarl/go-bindata-assetfs"
 )
 
 // LibraryEntry defines a single video and all information known about
@@ -20,16 +21,32 @@ type LibraryEntry struct {
 	Filename    string
 	Title       string
 	Tags        []string
-	Date        time.Time
+	Date        vTime
 	Description string
 }
 
+type vTime struct {
+	time.Time
+}
+
+func (v *vTime) UnmarshalJSON(buf []byte) error {
+	tt, err := time.Parse("2006-01-02", strings.Trim(string(buf), `"`))
+	if err != nil {
+		return err
+	}
+	v.Time = tt
+	return nil
+}
+
+func (v *vTime) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + v.Time.Format("2006-01-02") + `"`), nil
+}
 
 var (
 	listTmpl *template.Template
 	plyrTmpl *template.Template
 	statTmpl *template.Template
-	
+
 	port         = flag.Int("port", 8080, "Serving port")
 	videoDir     = flag.String("video_dir", "video", "Directory to search for files to be tagged")
 	saveInterval = flag.Duration("save_interval", 5*time.Minute, "How often to back up the database to disk")
@@ -45,7 +62,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("Could not load listTmpl: %s", err)
 	}
-	
+
 	plyrTmpl, err = template.New("player", Asset).ParseFiles("static/tmpl/main.tmpl", "static/tmpl/plyr.tmpl")
 	if err != nil {
 		log.Fatalf("Could not load plyrTmpl: %s", err)
@@ -65,7 +82,7 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	s := struct {
 		Port     int
 		VideoDir string
-		Library map[string]*LibraryEntry
+		Library  map[string]*LibraryEntry
 	}{
 		Port:     *port,
 		VideoDir: *videoDir,
@@ -232,7 +249,7 @@ func main() {
 			},
 		),
 	)
-	
+
 	library = make(map[string]*LibraryEntry)
 
 	// Init some state
